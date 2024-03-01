@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
-import { Form, Button } from 'react-bootstrap';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Form } from 'react-bootstrap';
+import { useParams, useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
 const SearchBox = () => {
   const navigate = useNavigate();
   const { keyword: urlKeyword } = useParams();
+  const location = useLocation();
 
-  // FIX: uncontrolled input - urlKeyword may be undefined
   const [keyword, setKeyword] = useState(urlKeyword || '');
+
+  let debounceTimer;
 
   const submitHandler = (e) => {
     e.preventDefault();
@@ -20,19 +22,36 @@ const SearchBox = () => {
     }
   };
 
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setKeyword(value);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      if (value) {
+        navigate(`/search/${value.trim()}`);
+      } else {
+        navigate('/');
+      }
+    }, 400);
+  };
+
+  useEffect(() => {
+    // Clear search input when route changes to home but not when it changes to search result page
+    if ( !location.pathname.startsWith('/search')) {
+      setKeyword('');
+    }
+  }, [location.pathname]);
+
   return (
     <Form onSubmit={submitHandler} className='d-flex'>
       <Form.Control
         type='text'
         name='q'
-        onChange={(e) => setKeyword(e.target.value)}
+        onChange={handleInputChange}
         value={keyword}
         placeholder='Search Products...'
         className='mr-sm-2 ml-sm-5'
       ></Form.Control>
-      <Button type='submit' variant='outline-success' className='p-2 mx-2'>
-        Search
-      </Button>
     </Form>
   );
 };
